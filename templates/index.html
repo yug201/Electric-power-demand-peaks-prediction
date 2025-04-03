@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power Demand Prediction</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f8fb;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            font-size: 24px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .btn-predict {
+            display: inline-block;
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn-predict:hover {
+            background-color: #45a049;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+        }
+
+        canvas {
+            margin-top: 30px;
+            width: 100%;
+            height: 400px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        🚀 Power Demand Prediction System
+    </header>
+
+    <div class="container">
+        <h2>Enter Date for Prediction</h2>
+        <div class="form-group">
+            <label for="date">Date (YYYY-MM-DD):</label>
+            <input type="text" id="date" placeholder="2024-12-12" required>
+        </div>
+        <button class="btn-predict" onclick="predict()">Predict</button>
+        <div id="result"></div>
+    </div>
+
+    <div class="container">
+        <h2>Power Demand Prediction Chart</h2>
+        <canvas id="chart"></canvas>
+    </div>
+
+    <footer>
+        © 2024 Power Demand Prediction System. All rights reserved.
+    </footer>
+
+    <script>
+        async function predict() {
+            const date = document.getElementById('date').value;
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = "⏳ Loading data...";
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date: date })
+                });
+
+                const data = await response.json();
+                if (data.error) {
+                    resultDiv.innerHTML = `<span style="color: red;">❌ ${data.error}</span>`;
+                } else {
+                    resultDiv.innerHTML = "✅ Data loaded. Rendering graph...";
+                    renderChart(data);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span style="color: red;">❌ An error occurred: ${error}</span>`;
+            }
+        }
+
+        function renderChart(data) {
+            const dates = data.map(item => item.date);
+            const actualData = data.map(item => item.actual_power_demand || null);
+            const predictedData = data.map(item => item.predicted_power_demand || null);
+
+            const ctx = document.getElementById('chart').getContext('2d');
+            if (window.myChart) {
+                window.myChart.destroy(); // Destroy previous instance if exists
+            }
+
+            window.myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Actual Power Demand',
+                            data: actualData,
+                            borderColor: 'blue',
+                            backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                            fill: true,
+                            spanGaps: true,
+                        },
+                        {
+                            label: 'Predicted Power Demand',
+                            data: predictedData,
+                            borderColor: 'green',
+                            backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                            fill: true,
+                            spanGaps: true,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: { display: true, text: 'Power Demand: Actual vs Predicted' }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
